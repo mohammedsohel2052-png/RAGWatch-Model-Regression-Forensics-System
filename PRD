@@ -1,0 +1,207 @@
+# PRD: Model Regression Detection System
+
+**Owner:** Mohammed Sohel Patwari (Arise To Ascend)
+**Status:** In Progress
+**Version:** 2.0 — rebuilt around a learning-first RAG-based SUT
+
+---
+
+## 1. Problem Statement
+
+LLM-powered features degrade silently. A prompt edit, a model version swap, a temperature change, or even a provider updating a model under the hood can drop accuracy, spike latency, or blow up token cost — with zero code-level error to catch it. Most teams find out from user complaints.
+
+There is no CI/CD-equivalent for LLM output quality. This project builds one: an automated pipeline that evaluates an LLM feature against a fixed dataset on every change, scores it across three axes, and alerts on regression.
+
+---
+
+## 2. Goals
+
+- Detect accuracy, latency, and cost regressions in an LLM feature automatically, on every code/prompt/model change.
+- Run as part of a CI/CD pipeline (GitHub Actions), not as a manual script.
+- Alert the developer via Slack the moment a regression crosses threshold.
+- Store historical run data so trends are visible over time, not just pass/fail.
+- **Use this build to actually learn RAG internals, embeddings, and eval design — not just wire together APIs.**
+
+## 3. Non-Goals
+
+- Not building a general-purpose eval framework for arbitrary teams (single-user tool, built for one system under test).
+- Not covering multi-step/agentic pipeline tracing — that's the separate Failure Forensics project.
+- Not optimizing the LLM feature itself past "good enough to evaluate" — this tool measures it, doesn't perfect it.
+
+---
+
+## 4. System Under Test (SUT) — Mini RAG Q&A Bot
+
+**Why the change from a ticket classifier:** a classifier teaches you almost nothing you don't already know. A small RAG system forces you through the exact concepts AI/LLM interview rounds probe — chunking, embeddings, vector similarity, retrieval, grounding. Same build effort, far more resume and interview value. And it directly strengthens your "AI/LLM engineering" specialization claim with a project you can explain end-to-end.
+
+**What it does:**
+- Input: a natural-language question.
+- Retrieval: find the most relevant chunks from a small local knowledge base.
+- Generation: LLM answers the question using only the retrieved chunks (grounded, not from memory).
+
+**Suggested knowledge base (pick one, keep it small — 15-20 short documents/pages):**
+- Your own project docs (README files from Kage Trade, ArbWatch, GestureIQ) — genuinely useful and dogfoods your own work.
+- A public FAQ set (e.g., a product's help docs) if you want cleaner ground-truth answers.
+
+**Concepts you'll learn building this:**
+| Component | Concept |
+|---|---|
+| Chunking documents | Why chunk size/overlap affects retrieval quality |
+| Embedding chunks | Vector representations of text, embedding models |
+| Storing vectors | Vector similarity search (cosine similarity), even without a full vector DB |
+| Retrieval step | Top-k retrieval, relevance ranking |
+| Generation step | Prompt construction with injected context, grounding to reduce hallucination |
+
+**Minimal stack for the SUT (keep this lightweight — it's not the main deliverable):**
+- `sentence-transformers` (local, free) to embed chunks and queries
+- Plain Python + numpy/`faiss` (or even a plain list + cosine similarity — skip infra for 20 documents) for retrieval
+- Anthropic/OpenAI API call for the generation step, with retrieved chunks injected into the prompt
+
+---
+
+## 5. Golden Dataset
+
+- **Format:** JSON, 25–40 rows.
+- **Fields per row:**
+  - `id`
+  - `question`
+  - `expected_answer` (reference answer, written by you)
+  - `expected_source_chunk_ids` (which document chunks *should* have been retrieved — this lets you evaluate retrieval quality separately from generation quality, a distinction that matters a lot in real RAG eval)
+- **Source:** write questions against your own knowledge base docs. Include:
+  - Easy direct-lookup questions
+  - Questions requiring info from 2 chunks combined
+  - Trick questions with no answer in the knowledge base (tests whether the system correctly says "I don't know" instead of hallucinating — this is a real and important eval case)
+
+---
+
+## 6. Scoring Metrics — aligned to the RAGAS standard
+
+These four metrics (context precision, context recall, faithfulness, answer relevancy) are the industry-standard set popularized by RAGAS and used by DeepEval, TruLens, and every major RAG eval platform in 2026. Using this exact terminology — not homemade names — is what makes this project read as "knows the field" rather than "built a script that resembles RAG."
+
+| Metric | Layer | How it's measured | What it catches |
+|---|---|---|---|
+| **Context Precision** | Retrieval | Of the chunks retrieved, what fraction are actually relevant? (are the right chunks ranked highest) | Bad reranking, noisy retrieval diluting relevant chunks |
+| **Context Recall** | Retrieval | Of the info needed to answer, what fraction did retrieval actually surface? | Chunking too coarse/fine, embedding model regressions, missing coverage |
+| **Faithfulness** | Generation | Does the answer only contain claims supported by the retrieved context? (LLM-as-judge scores this, or your own trick-question flag as a lightweight proxy) | Hallucination — the single most important RAG failure mode |
+| **Answer Relevancy** | Generation | Does the answer actually address the question asked? (semantic similarity between generated answer and reference answer) | Prompt regressions, off-topic generation, model swap side effects |
+| **Latency** | System | Wall-clock time per query, end-to-end (retrieval + generation) | Performance regressions |
+| **Token Usage / Cost** | System | Prompt + completion tokens from API response, converted to $ | Cost regressions (e.g. context window bloat) |
+
+**Lightweight implementation note:** full RAGAS uses an LLM-as-judge for faithfulness and answer relevancy, which costs extra API calls per eval run. For your MVP, approximate it: use embedding similarity for answer relevancy (cheap, no extra LLM call), and use your trick-question set (questions with no answer in the knowledge base) as a lightweight faithfulness check — if the model answers confidently anyway, that's a faithfulness failure. Mention in the interview that you know the "proper" version uses LLM-as-judge and chose the cheaper proxy deliberately for cost/speed — that's a real engineering tradeoff, not a shortcut you're hiding.
+
+Splitting retrieval metrics from generation metrics is the single most valuable design decision here — it's what separates a real RAG eval from a toy script, and it's the distinction interviewers specifically probe for.
+
+---
+
+## 7. Regression Detection Logic
+
+1. Every run is tagged with a `run_id`, `timestamp`, and `git_commit_hash`.
+2. The most recent run with a manually-approved "baseline" flag is the comparison point.
+3. On each new run, compute delta vs. baseline for each metric:
+   - Context precision/recall drop > 10% → **regression flagged**
+   - Answer relevancy drop > 5% → **regression flagged**
+   - Faithfulness failure rate increase (any) → **regression flagged** (zero-tolerance metric — hallucination is the failure mode that erodes user trust fastest)
+   - Latency increase > 20% → **regression flagged**
+   - Token cost increase > 15% → **regression flagged**
+4. Thresholds configurable via `config.yaml` — don't hardcode, this is a small but real "config-driven system" pattern worth practicing.
+5. A run can be manually promoted to the new baseline once reviewed (prevents one bad run from permanently skewing comparisons).
+
+---
+
+## 8. Alerting
+
+- On regression flag → POST to a Slack Incoming Webhook.
+- Message includes: which metric(s) regressed, delta %, run_id, commit hash, link to full report.
+- No alert on pass — avoid Slack noise.
+
+---
+
+## 9. Architecture
+
+```
+[Knowledge Base Docs]
+      │
+      ▼
+[Chunker + Embedder] ──► [Vector Store (in-memory/FAISS)]
+                                   │
+[Golden Dataset (questions)]      │
+      │                           │
+      ▼                           ▼
+[Eval Runner] ──query──► [Retriever] ──chunks──► [Generator (LLM API)]
+      │                                                  │
+      │◄──────────────── response, timing, tokens ───────┘
+      ▼
+[Scorer] ── context precision/recall / faithfulness / answer relevancy / latency / cost
+      │
+      ▼
+[Results Store] (SQLite, append-only, run_id indexed)
+      │
+      ▼
+[Regression Checker] ── compares vs baseline (config.yaml thresholds)
+      │
+      ▼
+[Slack Alerter] (fires only on threshold breach)
+```
+
+Triggered by: GitHub Actions on every push to `main` + nightly cron (catches silent provider-side model drift with zero code change on your end).
+
+---
+
+## 10. Tech Stack
+
+- **Language:** Python
+- **Embeddings:** `sentence-transformers` (local, free, no API cost for the SUT's retrieval step)
+- **Vector search:** plain numpy cosine similarity to start (20 docs doesn't need FAISS) — swap to FAISS later if you want the line on your resume
+- **LLM Access:** Anthropic/OpenAI SDK for the generation step
+- **Storage:** SQLite (simple, queryable, no infra)
+- **CI:** GitHub Actions (`.github/workflows/eval.yml`)
+- **Alerting:** Slack Incoming Webhook (`requests.post`)
+- **Reporting:** Markdown/HTML report per run, uploaded as a GitHub Actions artifact
+
+---
+
+## 11. Learning Path & Milestones
+
+Each milestone lists what to build **and** what to understand before moving on — don't just copy-paste, be able to explain the "why" for each.
+
+| Day | Build | Learn |
+|---|---|---|
+| 1 | Chunk knowledge base docs, embed with `sentence-transformers`, store vectors in a list/numpy array | How chunking size affects retrieval; what an embedding actually represents |
+| 1 | Write retrieval function (cosine similarity, top-k) | Vector similarity search fundamentals |
+| 2 | Write generation step: inject retrieved chunks into prompt, call LLM API | Prompt grounding, why RAG reduces (not eliminates) hallucination |
+| 2 | Write golden dataset (25-40 Q&A pairs incl. trick questions) | What makes a good eval set — coverage, edge cases, adversarial cases |
+| 3 | Eval runner: loop through dataset, capture retrieval + generation + timing + tokens | Instrumentation — measuring a pipeline, not just running it |
+| 3 | Scorer: retrieval accuracy, answer similarity, hallucination flag | Precision/recall concepts, semantic similarity scoring |
+| 4 | SQLite results store + baseline comparison logic | Designing for historical comparison, not just single-run pass/fail |
+| 4 | Slack webhook alerting | Basic webhook integration |
+| 5 | GitHub Actions workflow (on-push + nightly cron) | Real CI/CD wiring for a non-traditional (AI) test suite |
+| 5 | README + demo: intentionally degrade something (bad prompt, wrong chunk size) and show the system catches it | Proving the system actually detects regressions, not just producing green checkmarks |
+
+~5 days end to end, but day 1-2 (the RAG build) is where most of the actual learning happens — don't rush that part even if it's tempting to skip ahead to the "impressive" CI/CD wiring.
+
+---
+
+## 12. Resume Framing (once built)
+
+> **Model Regression Detection System** — Built a CI/CD-integrated evaluation pipeline for a RAG-based Q&A system, scoring context precision/recall, faithfulness, answer relevancy, latency, and token cost on every commit (metrics aligned to the RAGAS framework). Automated Slack alerts on quality regressions via GitHub Actions, with historical run tracking in SQLite.
+
+Using the real RAGAS vocabulary here (not homemade metric names) is what makes this line credible to anyone who's touched a RAG system in production — it signals you researched how the industry actually evaluates these systems rather than inventing your own ad hoc checks.
+
+---
+
+## 13. Marsh Engineering Intern Interview — How to Use This Project
+
+Based on current interview patterns at Marsh & McLennan: expect 2-3 rounds (recruiter screen → 1-2 technical rounds → possibly HR/behavioral), with technical rounds probing **data structures/algorithms, system design basics, SQL, and testing/debugging practices**, and a strong behavioral component using the **STAR method** ("tell me about a time..."). Marsh's job descriptions explicitly value Agile delivery, cloud services familiarity, and "ensuring high-quality code through testing" — this project maps directly onto that last point, which most candidates won't have a concrete story for.
+
+**For technical rounds, be ready to explain (not just built, but *why*):**
+- Why you split retrieval metrics from generation metrics — a bad answer in RAG can come from two completely different places (retriever found the wrong info, or generator ignored good info), and conflating them makes debugging impossible. This is a system-design-thinking answer, not just a coding one.
+- The cosine similarity math conceptually — what a vector embedding is, why closeness in vector space approximates closeness in meaning. Simple enough to explain in 2 minutes, but shows you didn't just call a library blindly.
+- Your threshold design (`config.yaml`, why zero-tolerance on faithfulness but 20% tolerance on latency) — this is a judgment call about risk, which is exactly the kind of "how do you think about production quality" question engineering interviews ask.
+- How you'd scale this: e.g., swap in-memory numpy search for FAISS or a managed vector DB (Pinecone/pgvector) if the knowledge base grew past a few thousand docs, or move SQLite to Postgres if multiple people needed concurrent access. You don't need to build this — just be able to say it if asked "how would this handle scale," since Marsh's JD explicitly calls out "background in developing scalable applications."
+
+**For behavioral rounds — pre-build 2-3 STAR stories from this project while you're building it, not after:**
+- A time something **broke and you found the root cause** (e.g., a chunking size change that tanked context recall) — Situation/Task/Action/Result, with a specific number if you can (e.g. "recall dropped from 85% to 60%, traced it to chunk size").
+- A time you made a **deliberate tradeoff under time pressure** (e.g., embedding similarity instead of full LLM-as-judge for faithfulness, to hit your timeline) — shows engineering judgment, not perfectionism.
+- A time you **learned something new fast** to ship (embeddings/vector search, if genuinely new to you before this project) — ties directly to "tell me about adapting to a new situation," a question that's shown up repeatedly in their intern interviews.
+
+**One thing to actually say if asked "why does this matter":** LLMs are non-deterministic and providers silently update models — without automated regression testing, quality drops get caught by angry users, not by CI. That one sentence answers "why did you build this" cleanly and ties back to real production risk, which is a mature answer for an intern-level candidate.

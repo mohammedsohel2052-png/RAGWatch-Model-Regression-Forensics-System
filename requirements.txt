@@ -1,0 +1,12 @@
+# Core RAG & embedding
+sentence-transformers>=2.2.0
+numpy>=1.24.0
+
+# LLM API (used for OpenAI and Ollama — both use the openai SDK)
+openai>=1.0.0
+
+# Web dashboard
+flask>=2.3.0
+
+# Env var loading
+python-dotenv>=1.0.0

@@ -1,0 +1,42 @@
+name: Model Evaluation Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 0 * * *'  # Nightly at midnight UTC
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -e ./ragwatch
+
+    - name: Run Evaluation
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        # Use stub backend if no OpenAI key is set in CI secrets
+        GENERATOR_BACKEND: ${{ secrets.OPENAI_API_KEY != '' && 'openai' || 'stub' }}
+      run: |
+        python eval_runner.py
+
+    - name: Upload Evaluation Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: eval_results_${{ github.sha }}
+        path: eval_results.db
+        retention-days: 30

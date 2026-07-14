@@ -1,0 +1,127 @@
+[
+  {
+    "question": "What is a deductible?",
+    "expected_answer": "A deductible is the amount you pay out of pocket before your insurance coverage kicks in.",
+    "expected_source_chunk_ids": ["chunk_0"]
+  },
+  {
+    "question": "How does a deductible affect my premium?",
+    "expected_answer": "Higher deductibles generally mean lower monthly premiums, while lower deductibles mean higher premiums.",
+    "expected_source_chunk_ids": ["chunk_0"]
+  },
+  {
+    "question": "What is an insurance premium?",
+    "expected_answer": "A premium is the amount you pay to maintain your insurance policy, typically on a monthly or annual basis.",
+    "expected_source_chunk_ids": ["chunk_1"]
+  },
+  {
+    "question": "What factors affect my insurance premium?",
+    "expected_answer": "Premiums are calculated based on risk factors including age, location, claims history, credit score, and coverage amount.",
+    "expected_source_chunk_ids": ["chunk_1", "chunk_9"]
+  },
+  {
+    "question": "What does comprehensive auto insurance cover?",
+    "expected_answer": "Comprehensive auto insurance covers damage from theft, vandalism, natural disasters, fire, falling objects, and animal collisions.",
+    "expected_source_chunk_ids": ["chunk_2"]
+  },
+  {
+    "question": "Does comprehensive insurance cover collision damage?",
+    "expected_answer": "No, comprehensive coverage does NOT cover collision damage — that is covered by collision insurance.",
+    "expected_source_chunk_ids": ["chunk_2", "chunk_7"]
+  },
+  {
+    "question": "What is liability insurance?",
+    "expected_answer": "Liability insurance covers the costs when you are legally responsible for injuring someone or damaging their property.",
+    "expected_source_chunk_ids": ["chunk_3"]
+  },
+  {
+    "question": "What does bodily injury liability cover?",
+    "expected_answer": "Bodily Injury Liability pays for medical expenses, lost wages, and legal costs for others you injure.",
+    "expected_source_chunk_ids": ["chunk_3"]
+  },
+  {
+    "question": "How do I file an insurance claim?",
+    "expected_answer": "Filing a claim starts with notifying your insurer promptly, providing documentation, working with an adjuster, and receiving a payout minus your deductible.",
+    "expected_source_chunk_ids": ["chunk_4"]
+  },
+  {
+    "question": "Can filing multiple claims raise my premium?",
+    "expected_answer": "Yes, filing multiple claims in a short period can increase your future premiums.",
+    "expected_source_chunk_ids": ["chunk_4"]
+  },
+  {
+    "question": "What is uninsured motorist coverage?",
+    "expected_answer": "Uninsured Motorist coverage protects you if you are involved in an accident with a driver who has no insurance.",
+    "expected_source_chunk_ids": ["chunk_5"]
+  },
+  {
+    "question": "What is underinsured motorist coverage?",
+    "expected_answer": "Underinsured Motorist coverage applies when the at-fault driver's policy limits are too low to fully cover your damages.",
+    "expected_source_chunk_ids": ["chunk_5"]
+  },
+  {
+    "question": "What is a policy exclusion?",
+    "expected_answer": "A policy exclusion is a specific condition or event that is NOT covered by your insurance policy.",
+    "expected_source_chunk_ids": ["chunk_6"]
+  },
+  {
+    "question": "Does auto insurance cover mechanical breakdown?",
+    "expected_answer": "No, mechanical breakdown is typically excluded from standard auto insurance policies.",
+    "expected_source_chunk_ids": ["chunk_6"]
+  },
+  {
+    "question": "What is the difference between collision and comprehensive coverage?",
+    "expected_answer": "Collision covers damage from hitting something. Comprehensive covers non-collision events like theft, fire, or weather.",
+    "expected_source_chunk_ids": ["chunk_7"]
+  },
+  {
+    "question": "If a deer hits my car, is that collision or comprehensive?",
+    "expected_answer": "A deer strike is covered under comprehensive coverage, not collision.",
+    "expected_source_chunk_ids": ["chunk_2", "chunk_7"]
+  },
+  {
+    "question": "What is a rider or endorsement?",
+    "expected_answer": "A rider is an optional add-on to your standard insurance policy that provides additional coverage beyond the base policy.",
+    "expected_source_chunk_ids": ["chunk_8"]
+  },
+  {
+    "question": "What is gap insurance?",
+    "expected_answer": "Gap insurance covers the difference between your car's current market value and the remaining loan balance if your car is totaled.",
+    "expected_source_chunk_ids": ["chunk_8"]
+  },
+  {
+    "question": "How is my insurance premium calculated?",
+    "expected_answer": "Premiums are calculated using driving record, age, vehicle type, mileage, location, credit score, and coverage level.",
+    "expected_source_chunk_ids": ["chunk_9"]
+  },
+  {
+    "question": "Does my credit score affect my auto insurance premium?",
+    "expected_answer": "Yes, in most states a lower credit score leads to higher premiums.",
+    "expected_source_chunk_ids": ["chunk_9"]
+  },
+  {
+    "question": "What does roadside assistance cover?",
+    "expected_answer": "Roadside assistance covers towing, flat tire service, and battery jump starts.",
+    "expected_source_chunk_ids": ["chunk_8"]
+  },
+  {
+    "question": "Is liability insurance required by law?",
+    "expected_answer": "Yes, liability insurance is the minimum legally required coverage in most states.",
+    "expected_source_chunk_ids": ["chunk_3"]
+  },
+  {
+    "question": "What does it mean if a policy limit is 25/50/25?",
+    "expected_answer": "It means $25,000 per person for bodily injury, $50,000 per accident, and $25,000 for property damage.",
+    "expected_source_chunk_ids": ["chunk_3"]
+  },
+  {
+    "question": "What is the capital of France?",
+    "expected_answer": "I don't know, this is not covered in the provided insurance documents.",
+    "expected_source_chunk_ids": []
+  },
+  {
+    "question": "Who invented the telephone?",
+    "expected_answer": "I don't know, this is not covered in the provided insurance documents.",
+    "expected_source_chunk_ids": []
+  }
+]
