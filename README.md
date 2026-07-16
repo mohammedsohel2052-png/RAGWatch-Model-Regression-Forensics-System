@@ -1,131 +1,110 @@
-# Model Regression Detection System
+<div align="center">
+  <img src="https://img.shields.io/badge/Status-Active-success.svg" alt="Status">
+  <img src="https://img.shields.io/badge/Version-v0.2.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+</div>
 
-A CI/CD-integrated evaluation pipeline for RAG-based Q&A systems. Automatically scores an LLM pipeline against a fixed golden dataset on every commit and nightly, tracking historical metrics and alerting on regressions before they reach production.
+<br>
 
-## Why This Exists
-
-LLMs are non-deterministic, and providers silently update models. Without automated regression testing, quality drops — hallucinations, latency spikes, or bad retrievals — are caught by angry users, not engineers. This system runs on
-
-
-
-
-
-
-
-
-
-
-
-
-
- every push and nightly to catch regressions automatically.
+<div align="center">
+  <h1>RAGWatch: Model Regression & Forensics SDK</h1>
+  <p><strong>A CI/CD-integrated evaluation, monitoring, and root-cause forensics pipeline for RAG systems.</strong></p>
+</div>
 
 ---
 
-## Project Structure
+## 🛑 The Problem: AI Regressions are Silent
 
-```
-.
-├── doc.md                  # Knowledge base (10 insurance document chunks)
-├── golden_dataset.json     # 25 Q&A pairs for evaluation (includes 2 trick questions)
-├── rag_core.py             # RAG retrieval: loads doc.md, embeds with sentence-transformers
-├── generator.py            # LLM generation: Ollama → OpenAI → stub fallback
-├── eval_runner.py          # Main evaluation pipeline (run this in CI and locally)
-├── demo.py                 # Self-contained regression demo (no API key needed)
-├── requirements.txt        # Python dependencies
-├── .env.example            # Environment variable template
-├── ragwatch/               # The ragwatch SDK (installable Python package)
-│   └── ragwatch/
-│       ├── evaluator.py    # Evaluator class
-│       ├── scorer.py       # RAGAS-style metrics
-│       ├── regression.py   # Regression comparison logic
-│       ├── monitor.py      # @monitor decorator for production tracing
-│       ├── storage.py      # SQLite persistence
-│       └── ui.py           # Flask dashboard (http://localhost:5050)
-└── .github/workflows/
-    └── eval.yml            # GitHub Actions: runs eval on every push + nightly
-```
+LLMs are non-deterministic, and embedding models change. If a developer swaps an embedding model or tweaks a prompt to save costs, the system might suddenly start hallucinating or failing to retrieve context. 
+
+Unlike traditional software where a bug causes a loud crash, **AI regressions cause worse answers** — which are completely invisible unless you measure them.
+
+## 🚀 The Solution: RAGWatch SDK
+
+RAGWatch is a lightweight SDK that runs in your CI/CD pipeline and production environment to catch regressions before they reach your users. 
+
+With the release of **v0.2.0**, RAGWatch now includes a full **LLM-as-a-Judge Forensics Engine** to automatically diagnose the root cause of regressions and a premium, Apple-inspired monochrome dashboard.
 
 ---
 
-## Metrics Tracked
+## 🌟 Key Features
 
-| Metric | What it measures |
-|---|---|
-| **Context Precision** | Of retrieved chunks, what % were actually relevant? |
-| **Context Recall** | Of all needed chunks, what % did the retriever find? |
-| **Answer Relevancy** | Semantic similarity between generated and expected answer |
-| **Faithfulness** | Did the model hallucinate? Does it correctly say "I don't know"? |
-| **Latency (ms)** | End-to-end time per query |
+### 1. Automated Regression Detection
+Automatically scores an LLM pipeline against a fixed `golden_dataset.json` on every commit. Tracks historical metrics and alerts on regressions (e.g., dropping from 95% precision to 60%).
+
+### 2. Four-Pillar Metrics Evaluation
+We measure exactly where the pipeline is failing using RAGAS-style metrics:
+- **Context Precision**: Of retrieved chunks, what % were actually relevant?
+- **Context Recall**: Of all needed chunks, what % did the retriever find?
+- **Answer Relevancy**: Semantic similarity between generated and expected answer.
+- **Faithfulness**: Did the model hallucinate? Does it correctly say "I don't know"?
+
+### 3. Root-Cause Forensics & Taxonomy (NEW in v0.2.0)
+When a regression occurs, the **Forensics Engine** uses an LLM-as-a-judge to diagnose the failure into a 5-tier taxonomy:
+1. `RETRIEVAL_MISS`: The retriever failed to find the right document.
+2. `RETRIEVAL_NOISE`: The retriever found too much irrelevant junk, confusing the LLM.
+3. `GENERATION_HALLUCINATION`: The LLM made up facts not in the context.
+4. `GENERATION_MISUSE`: The context had the answer, but the LLM ignored it.
+5. `AMBIGUOUS_GOLDEN`: The test question itself is flawed.
+
+### 4. Human-in-the-Loop Feedback (NEW in v0.2.0)
+Correct hallucinations directly in the UI dashboard and automatically append them to `golden_dataset.json` to prevent the regression from happening again.
+
+### 5. Premium UI Dashboard
+A fully local, zero-config Flask dashboard featuring a sleek, Apple-inspired black-and-white glassmorphism design.
 
 ---
 
-## Quick Start
+## 📦 Installation (SDK)
 
-### 1. Install dependencies
+Install the SDK directly from the repository or via PyPI (coming soon):
 
 ```bash
-python -m venv venv
-.\venv\Scripts\activate      # Windows
-# source venv/bin/activate   # Mac/Linux
-pip install -r requirements.txt
+# Clone the repository
+git clone https://github.com/mohammedsohel2052-png/Model-regression-detection.git
+cd Model-regression-detection
+
+# Install the RAGWatch SDK
 pip install -e ./ragwatch
+
+# Install demo dependencies
+pip install -r requirements.txt
 ```
 
-### 2. Configure (optional)
+---
+
+## 💻 Quick Start
+
+### 1. Run the Evaluation Pipeline
+Run this in your CI/CD pipeline or locally to test your current code against the golden dataset.
 
 ```bash
-cp .env.example .env
-# Edit .env — set OPENAI_API_KEY or install Ollama for local LLMs
-# If neither is set, the system uses a stub backend (works offline)
+# First run: establish a healthy baseline
+python eval_runner.py --set-baseline
+
+# Subsequent runs: evaluate and compare against baseline
+python eval_runner.py
 ```
 
-### 3. Run the demo (no API key required)
-
-```bash
-python demo.py
-```
-
-This will:
-- Load the knowledge base and embed it locally
-- Establish a healthy baseline
-- Simulate a regression (broken retrieval)
-- Show regression alerts firing
-
-### 4. Run the full evaluation
-
-```bash
-python eval_runner.py --set-baseline   # First run: evaluate and set as baseline
-python eval_runner.py                  # Subsequent runs: evaluate and compare
-```
-
-### 5. View the dashboard
+### 2. Launch the Premium Dashboard
+View historical runs, live production traces, and run root-cause forensics.
 
 ```bash
 python -m ragwatch.ui
-# Open http://localhost:5050
+# Opens http://localhost:5050
 ```
 
----
-
-## Demo: Catching a Regression in 3 Steps
-
+### 3. Run Root-Cause Forensics via CLI
 ```bash
-# Step 1: Set a healthy baseline
-python eval_runner.py --set-baseline
-
-# Step 2: Simulate a regression (break retrieval)
-python eval_runner.py --top-k 0
-
-# The system will:
-# → Detect the precision/recall drop
-# → Post a Slack alert (if SLACK_WEBHOOK_URL is set)
-# → Exit with code 1 (blocks CI pipeline)
+python eval_runner.py --diagnose <trace_id>
 ```
 
 ---
 
-## Using the `@monitor` Decorator in Production
+## 🔌 Using the `@monitor` SDK Decorator in Production
+
+Instrument your production code with a single line of code. Every call automatically logs latency, traces, and output previews to the local `ragwatch.db`.
 
 ```python
 from ragwatch import monitor
@@ -136,24 +115,20 @@ def generate_answer(query, docs):
     return {"answer": "..."}
 ```
 
-Every call automatically logs latency and output previews to `ragwatch.db`, visible in the dashboard.
-
 ---
 
-## Tech Stack
+## 🏗️ Tech Stack
 
 | Technology | Role |
 |---|---|
-| `sentence-transformers` | Local text embeddings (no API needed) |
-| `numpy` | Cosine similarity for retrieval |
-| `sqlite3` | Lightweight run history storage |
-| `openai` SDK | Works with both OpenAI and Ollama (same API format) |
-| `flask` | Local evaluation dashboard |
-| `python-dotenv` | Environment variable management |
-| GitHub Actions | CI/CD: runs eval on every push + nightly |
+| `pydantic` | Structured JSON extraction for the Forensics LLM-as-a-judge |
+| `sentence-transformers` | Local text embeddings for answer relevancy |
+| `numpy` | Cosine similarity for retrieval evaluation |
+| `sqlite3` | Lightweight, zero-config run history storage |
+| `openai` SDK | Backend-agnostic client (Works with OpenAI or Ollama) |
+| `flask` | Premium UI dashboard |
 
 ---
 
-Built by **Mohammed Sohel Patwari**
-
-Inspired by [RAGAS](https://docs.ragas.io/), [LangSmith](https://smith.langchain.com/), and [Braintrust](https://www.braintrustdata.com/).
+Built by **Mohammed Sohel Patwari**  
+Inspired by industry leaders like [RAGAS](https://docs.ragas.io/), [LangSmith](https://smith.langchain.com/), and [Braintrust](https://www.braintrustdata.com/).
