@@ -1,6 +1,5 @@
 <div align="center">
   <img src="https://img.shields.io/badge/Status-Active-success.svg" alt="Status">
-  <img src="https://img.shields.io/badge/Version-v0.2.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
 </div>
@@ -8,7 +7,7 @@
 <br>
 
 <div align="center">
-  <h1>RAGWatch: Model Regression & Forensics SDK</h1>
+  <h1>RAGWatch: Model Regression & Forensics System</h1>
   <p><strong>A CI/CD-integrated evaluation, monitoring, and root-cause forensics pipeline for RAG systems.</strong></p>
 </div>
 
@@ -20,11 +19,11 @@ LLMs are non-deterministic, and embedding models change. If a developer swaps an
 
 Unlike traditional software where a bug causes a loud crash, **AI regressions cause worse answers** — which are completely invisible unless you measure them.
 
-## 🚀 The Solution: RAGWatch SDK
+## 🚀 The Solution: RAGWatch
 
-RAGWatch is a lightweight SDK that runs in your CI/CD pipeline and production environment to catch regressions before they reach your users. 
+RAGWatch is a lightweight system that runs in your CI/CD pipeline and production environment to catch regressions before they reach your users. 
 
-With the release of **v0.2.0**, RAGWatch now includes a full **LLM-as-a-Judge Forensics Engine** to automatically diagnose the root cause of regressions and a premium, Apple-inspired monochrome dashboard.
+RAGWatch includes a full **LLM-as-a-Judge Forensics Engine** to automatically diagnose the root cause of regressions and a premium, Apple-inspired monochrome dashboard.
 
 ---
 
@@ -40,7 +39,7 @@ We measure exactly where the pipeline is failing using RAGAS-style metrics:
 - **Answer Relevancy**: Semantic similarity between generated and expected answer.
 - **Faithfulness**: Did the model hallucinate? Does it correctly say "I don't know"?
 
-### 3. Root-Cause Forensics & Taxonomy (NEW in v0.2.0)
+### 3. Root-Cause Forensics & Taxonomy
 When a regression occurs, the **Forensics Engine** uses an LLM-as-a-judge to diagnose the failure into a 5-tier taxonomy:
 1. `RETRIEVAL_MISS`: The retriever failed to find the right document.
 2. `RETRIEVAL_NOISE`: The retriever found too much irrelevant junk, confusing the LLM.
@@ -48,7 +47,7 @@ When a regression occurs, the **Forensics Engine** uses an LLM-as-a-judge to dia
 4. `GENERATION_MISUSE`: The context had the answer, but the LLM ignored it.
 5. `AMBIGUOUS_GOLDEN`: The test question itself is flawed.
 
-### 4. Human-in-the-Loop Feedback (NEW in v0.2.0)
+### 4. Human-in-the-Loop Feedback
 Correct hallucinations directly in the UI dashboard and automatically append them to `golden_dataset.json` to prevent the regression from happening again.
 
 ### 5. Premium UI Dashboard
@@ -56,7 +55,7 @@ A fully local, zero-config Flask dashboard featuring a sleek, Apple-inspired bla
 
 ---
 
-## 📦 Installation (SDK)
+## 📦 Installation
 
 Install the SDK directly from the repository or via PyPI (coming soon):
 
@@ -65,7 +64,7 @@ Install the SDK directly from the repository or via PyPI (coming soon):
 git clone https://github.com/mohammedsohel2052-png/Model-regression-detection.git
 cd Model-regression-detection
 
-# Install the RAGWatch SDK
+# Install the RAGWatch package
 pip install -e ./ragwatch
 
 # Install demo dependencies
@@ -102,7 +101,7 @@ python eval_runner.py --diagnose <trace_id>
 
 ---
 
-## 🔌 Using the `@monitor` SDK Decorator in Production
+## 🔌 Using the `@monitor` Decorator in Production
 
 Instrument your production code with a single line of code. Every call automatically logs latency, traces, and output previews to the local `ragwatch.db`.
 
